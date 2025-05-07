@@ -1,3 +1,79 @@
+
+
+ระบบจัดการวิดีโอหรือเว็บไซต์ที่คล้ายกัน การเปลี่ยนแปลงเหล่านี้มุ่งเน้นไปที่การเพิ่มฟังก์ชันการทำงานใหม่ที่เกี่ยวข้องกับการระบุวิดีโอว่าเป็น "Scam" (หลอกลวง) หรือ "Legit" (น่าเชื่อถือ) และการปรับปรุงการแสดงผลข้อมูล
+นี่คือคำอธิบายของการเปลี่ยนแปลงในแต่ละไฟล์:
+config.php:
+ * มีการเปลี่ยนแปลงรายละเอียดการเชื่อมต่อฐานข้อมูล (database connection details) ซึ่งเป็นส่วนสำคัญในการทำให้เว็บไซต์สามารถสื่อสารกับฐานข้อมูลเพื่อจัดเก็บและดึงข้อมูลได้
+ * มีการใส่เครื่องหมายคอมเมนต์ (commented) ที่บรรทัดเกี่ยวกับรหัสซื้อ (purchase code line) ซึ่งอาจหมายถึงการปิดใช้งานการตรวจสอบรหัสซื้อชั่วคราว หรืออาจเป็นการระบุส่วนของโค้ดที่ไม่ต้องการให้ทำงาน
+install/index.php:
+ * มีการใส่เครื่องหมายคอมเมนต์ที่บรรทัด 46 ถึง 54 (commented line 46 to 54) ในไฟล์ติดตั้ง ซึ่งอาจเป็นการข้ามขั้นตอนบางอย่างในการติดตั้ง หรือปิดใช้งานฟังก์ชันบางอย่างในช่วงการติดตั้ง
+assets/include/function_general.php:
+ * มีการเพิ่ม return array('status'=>'SUCCESS'); เข้าไปในฟังก์ชัน check_($check) และฟังก์ชัน check_success($check) ซึ่งหมายความว่าเมื่อฟังก์ชันเหล่านี้ถูกเรียกใช้งาน จะส่งคืนอาร์เรย์ (ชุดข้อมูล) ที่มีสถานะเป็น "SUCCESS" อาจใช้เพื่อตรวจสอบความถูกต้องบางอย่างและการดำเนินการสำเร็จลุล่วง
+sources/home/content:
+ * มีการเพิ่มข้อมูล 'SCAM' => number_format($video->scam), และ 'LEGIT' => number_format($video->legit), ในทุกที่ที่มี 'VIEWS' => number_format($video->views), ซึ่งหมายความว่าในส่วนที่แสดงรายการวิดีโอในหน้าแรก จะมีการเพิ่มการแสดงจำนวน "Scam" และ "Legit" ของแต่ละวิดีโอ โดยมีการจัดรูปแบบตัวเลขด้วย number_format()
+ * มีการเพิ่มข้อมูล 'SCAM' => $get_video->scam, และ 'LEGIT' => $get_video->legit, ในทุกที่ที่มี 'VIEWS' => $get_video->views, ซึ่งคล้ายกับการเปลี่ยนแปลงด้านบน แต่ดูเหมือนจะใช้กับข้อมูลวิดีโอที่ดึงมาด้วยตัวแปร $get_video โดยตรง โดยไม่มีการจัดรูปแบบตัวเลขในขั้นตอนนี้
+sources/watch/content:
+ * มีการเพิ่มข้อมูล 'SCAM' => number_format($get_video->scam), และ 'LEGIT' => number_format($get_video->legit), ในทุกที่ที่มี 'LIKES' => number_format($get_video->likes), ซึ่งหมายความว่าในหน้าดูวิดีโอ จะมีการเพิ่มการแสดงจำนวน "Scam" และ "Legit" ของวิดีโอปัจจุบัน โดยมีการจัดรูปแบบตัวเลข
+ajax/like-system.php:
+ * มีการเพิ่มส่วนของโค้ด else if ($_GET['first'] == 'legit') { ... } ซึ่งจัดการกับการโหวต "Legit" สำหรับวิดีโอ:
+   * ตรวจสอบว่าผู้ใช้เคยกด "Legit" วิดีโอนี้หรือไม่ หากเคย จะลบการโหวต "Legit"
+   * หากยังไม่เคยกด "Legit" จะตรวจสอบว่าเคยกด "Scam" หรือไม่ หากเคย จะลบการโหวต "Scam"
+   * จากนั้นจะเพิ่มการโหวต "Legit" ให้กับวิดีโอ และส่งคืนสถานะ "added_legit" หรือ "deleted_legit"
+ * มีการเพิ่มส่วนของโค้ด else if ($_GET['first'] == 'scam') { ... } ซึ่งจัดการกับการโหวต "Scam" สำหรับวิดีโอ:
+   * ทำงานคล้ายกับการโหวต "Legit" แต่เป็นการจัดการกับการโหวต "Scam" และส่งคืนสถานะ "added_scam" หรือ "deleted_scam"
+ajax/like-system.php (แก้ไขฟังก์ชัน notify):
+ * มีการแก้ไขฟังก์ชัน notify เพื่อให้รองรับการแจ้งเตือนเมื่อมีการโหวต "Legit" หรือ "Scam" วิดีโอ
+ * มีการเพิ่มเงื่อนไข if (in_array($data['type'], array('added_dislike','added_like','added_legit','added_scam'))) { ... } เพื่อตรวจสอบประเภทของการกระทำ
+ * มีการใช้ switch statement เพื่อกำหนดประเภทของการแจ้งเตือน ($type) ให้ถูกต้องตามการโหวต ("liked_ur_video", "disliked_ur_video", "legit_ur_video", "scammed_ur_video")
+ * มีการเรียกใช้ฟังก์ชัน pt_notify() เพื่อสร้างการแจ้งเตือนไปยังเจ้าของวิดีโอ
+assets/include/function_one (function PT_GetVideoByID()):
+ * มีการเพิ่มการดึงข้อมูลว่าผู้ใช้ปัจจุบันได้โหวต "Legit" หรือ "Scam" วิดีโอปัจจุบันหรือไม่ ($get_video->is_legit, $get_video->is_scam) โดยตรวจสอบจากตาราง T_DIS_LIKES ที่มี type เป็น 3 สำหรับ "Legit" และ 4 สำหรับ "Scam"
+ * มีการเพิ่มการดึงจำนวนการโหวต "Legit" และ "Scam" ทั้งหมดของวิดีโอ ($get_video->legit, $get_video->scam) จากตาราง T_DIS_LIKES
+sources/watch/content.php & sources/home/content.php:
+ * มีการเพิ่มตัวแปรใหม่หลายตัวที่เกี่ยวข้องกับการแสดงผลข้อมูล "Scam" และ "Legit" รวมถึงสถานะการโหวตของผู้ใช้:
+   * 'SCAM' => number_format($get_video->scam), และ 'LEGIT' => number_format($get_video->legit), สำหรับแสดงจำนวนโหวต
+   * 'RAEL_SCAM' => $get_video->scam, และ 'RAEL_LEGIT' => $get_video->legit, สำหรับจำนวนโหวตแบบไม่จัดรูปแบบ
+   * 'ISSCAM' => ($get_video->is_scam > 0) ? 'scam="true"' : '', และ 'ISLEGIT' => ($get_video->is_legit > 0) ? 'legit="true"' : '', สำหรับระบุว่าผู้ใช้ได้โหวตหรือไม่
+   * 'SCAM_ACTIVE_CLASS' => ($get_video->is_scam > 0) ? 'active' : '', และ 'LEGIT_ACTIVE_CLASS' => ($get_video->is_legit > 0) ? 'active' : '', สำหรับเพิ่มคลาส CSS หากผู้ใช้ได้โหวต
+themes->default->layout->home->list:
+ * มีการแทนที่ข้อความ "7.8k scam" และ "Legit" ด้วยตัวแปร {{SCAM}} และ {{LEGIT}} เพื่อแสดงจำนวนโหวตแบบไดนามิก
+themes->default->layout->home->list:
+ * มีการเพิ่มส่วนของ HTML <span>7.8k scam</span><span class="bold">|</span> <span>8.9k Legit</span> ภายใน div ที่มีคลาส video-list-by ซึ่งดูเหมือนจะเป็นการแสดงตัวเลข "Scam" และ "Legit" ในรายการวิดีโอ
+themes->default->css->style.css (line 204):
+ * มีการปรับความกว้าง (width) ขององค์ประกอบบางอย่างเป็น 200px
+themes->default->layout->watch->content.html:
+ * มีการใส่เครื่องหมายคอมเมนต์ที่บรรทัด 448 ถึง 453 และทำการคัดลอก (duplicated) ไอคอน "likes" และ "dislikes"
+ * มีการแก้ไขไอคอนที่คัดลอกมา โดยเปลี่ยนไปใช้ <i class="fa fa-ban" style="font-size:16px"></i> สำหรับ "dislikes" และ <i class="fa fa-check-circle-o" style="font-size:16px"></i> สำหรับสิ่งที่น่าจะหมายถึง "legit" (เนื่องจากใช้ร่วมกับตัวแปร {{DISLIKES}}) ซึ่งอาจเป็นการแสดงไอคอนที่แตกต่างสำหรับ "Scam" และ "Legit"
+themes/default/js/script.js (function Wo_LikeSystem):
+ * มีการเพิ่มส่วนของโค้ด if (type == 'legit') { ... } เพื่อจัดการการคลิกปุ่ม "Legit":
+   * อัปเดตค่า data-legit และข้อความ #legit เมื่อมีการกด/ยกเลิกการกด "Legit"
+   * หากมีการกด "Legit" จะยกเลิกการกด "Scam" หากมีการกดอยู่
+ * มีการเพิ่มส่วนของโค้ด else if (type == 'scam') { ... } เพื่อจัดการการคลิกปุ่ม "Scam":
+   * ทำงานคล้ายกับการกด "Legit" แต่เป็นการจัดการกับ "Scam" และอัปเดตค่า data-likes (ซึ่งน่าจะเป็น data-scam ที่ถูกต้อง) และข้อความ #scam
+   * หากมีการกด "Scam" จะยกเลิกการกด "Legit" หากมีการกดอยู่
+themes/vidplay/layout/container.html:
+ * มีการเพิ่มคลาส side_open ให้กับแท็ก <body> ซึ่งอาจเกี่ยวข้องกับการเปิด/ปิดแถบด้านข้างของธีม Vidplay
+ * มีการเพิ่มปุ่ม "Donate" (บริจาค) หากวิดีโอไม่ใช่ของตัวเอง, ระบบบริจาคเปิดใช้งาน, มีอีเมล PayPal ของผู้ใช้ และวิดีโอไม่ได้ถูกขาย
+ajax/user.php:
+ * มีการใส่เครื่องหมายคอมเมนต์ที่ส่วนของการตรวจสอบอีเมล PayPal สำหรับการบริจาค
+ * มีการเพิ่มการตรวจสอบว่า crypto_wallet_address ใน $_POST ไม่ว่างเปล่า หากว่างเปล่าจะแสดงข้อผิดพลาด "Invalid Token Address" ซึ่งบ่งชี้ถึงการรองรับการบริจาคผ่านสกุลเงินดิจิทัล
+themes/vidplay/layouts/settings/general:
+ * มีการเปลี่ยนชื่อฟิลด์ในแบบฟอร์มจาก donation_paypal_email เป็น crypto_wallet_address ซึ่งสอดคล้องกับการเปลี่ยนแปลงใน ajax/user.php
+home/content.html (LINE 196):
+ * มีการเปลี่ยนค่า slidetoshow เป็น 5 ซึ่งน่าจะเกี่ยวข้องกับการตั้งค่าจำนวนรายการที่แสดงในสไลด์โชว์บนหน้าแรก
+Settings/content:
+ * มีการเพิ่มส่วนของการจัดการ "token_transactions" (ประวัติการทำธุรกรรมโทเค็น):
+   * ดึงข้อมูลการทำธุรกรรมของผู้ใช้จากตาราง T_TOKEN_TRANS
+   * สร้างคำอธิบาย (description) ที่แตกต่างกันไปขึ้นอยู่กับประเภทของธุรกรรม (บริจาค, ถอน, ฝาก)
+   * ดึงข้อมูลผู้รับผลประโยชน์ (beneficiary) และสร้างลิงก์ไปยังโปรไฟล์
+   * โหลดเทมเพลต settings/includes/transactions-list เพื่อแสดงแต่ละธุรกรรม
+สรุป:
+การเปลี่ยนแปลงโค้ดเหล่านี้โดยรวมมีจุดประสงค์หลักคือการเพิ่มระบบการให้คะแนนวิดีโอในรูปแบบ "Scam" (หลอกลวง) หรือ "Legit" (น่าเชื่อถือ) นอกเหนือจากระบบ "Like" และ "Dislike" ที่มีอยู่เดิม รวมถึงการแสดงผลข้อมูลเหล่านี้ในหน้าแรกและหน้าดูวิดีโอ นอกจากนี้ยังมีการปรับปรุงในส่วนของการบริจาคให้รองรับสกุลเงินดิจิทัล และเพิ่มหน้าประวัติการทำธุรกรรมโทเค็นในส่วนการตั้งค่าผู้ใช้
+
+
+
+
+
 config.php
 changed database connection details and commented purchase code line
 
